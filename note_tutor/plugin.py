@@ -1,6 +1,7 @@
 """Optional NoteSync extension: all tutoring UI, policy and paid calls live here."""
 import asyncio
 import json
+import os
 import re
 import threading
 import websockets
@@ -12,13 +13,31 @@ from .TabletAssistant import ASSISTANT_STYLE, ASSISTANT_MARKUP, ASSISTANT_SCRIPT
 class TutorExtension:
     def __init__(self):
         load_local_settings()
-        self.assistant = NoteAssistant()
+        self.claude_enabled = os.environ.get('NOTETUTOR_CLAUDE_ENABLED') == '1'
+        self.assistant = NoteAssistant() if self.claude_enabled else None
+
     def mcp_instructions(self):
-        from .instructions import TUTOR_INSTRUCTIONS
-        return TUTOR_INSTRUCTIONS
-    def tablet_assets(self): return ASSISTANT_STYLE, ASSISTANT_MARKUP, ASSISTANT_SCRIPT
-    def attach_window(self, host): return TutorControls(host, self.assistant)
-    def connection(self, server, websocket): return TutorConnection(self, websocket)
+        from .instructions import TUTOR_INSTRUCTIONS, CLAUDE_VISION_INSTRUCTIONS
+        return TUTOR_INSTRUCTIONS.replace(
+            'For tutoring, read_current_note to examine the current handwritten page before explaining it.\n',
+            CLAUDE_VISION_INSTRUCTIONS) if self.claude_enabled else TUTOR_INSTRUCTIONS
+
+    def tablet_assets(self):
+        if self.claude_enabled:
+            return ASSISTANT_STYLE, ASSISTANT_MARKUP, ASSISTANT_SCRIPT
+        return '', '', 'function updateExtensionConnection(){} function handleExtensionMessage(){return false;}'
+
+    def attach_window(self, host):
+        return TutorControls(host, self.assistant) if self.claude_enabled else None
+
+    def connection(self, server, websocket):
+        return TutorConnection(self, websocket) if self.claude_enabled else InactiveTutorConnection()
+
+
+class InactiveTutorConnection:
+    async def connected(self): pass
+    async def handle(self, data): return False
+    async def close(self): pass
 
 class TutorConnection:
     def __init__(self, extension, websocket):

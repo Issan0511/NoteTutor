@@ -14,6 +14,8 @@ def load_local_settings(path=None):
                   or os.environ.get('BEAMERPLUS_ENV_FILE')
                   or Path(__file__).resolve().parent.parent / '.env')
     values = dotenv_values(source, interpolate=False)
+    if values.get('NOTETUTOR_CLAUDE_ENABLED'):
+        os.environ.setdefault('NOTETUTOR_CLAUDE_ENABLED', values['NOTETUTOR_CLAUDE_ENABLED'])
     if values.get('ANTHROPIC_API_KEY'):
         os.environ.setdefault('ANTHROPIC_API_KEY', values['ANTHROPIC_API_KEY'])
     for current, legacy in ALIASES.items():
