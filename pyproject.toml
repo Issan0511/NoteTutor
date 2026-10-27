@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "note-tutor"
+version = "0.1.0"
+description = "Optional tutoring and transcription extension for NoteSync"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = ["notesync>=0.3,<1", "python-dotenv>=1,<2"]
+
+[project.entry-points."notesync.extensions"]
+tutor = "note_tutor.plugin:TutorExtension"
+
+[project.scripts]
+notetutor = "note_tutor.main:main"
+
+[tool.setuptools.packages.find]
+include = ["note_tutor*"]
